@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>SohagGPT</title>
+</head>
+<body>
+  <h1>🤖 SohagGPT</h1>
+
+  <input type="password" id="apiKeyInput" placeholder="🔑 OpenAI API Key দিন">
+  <button onclick="saveKey()">✅ Save API Key</button>
+  <br><br>
+
+  <input id="userInput" placeholder="✍️ প্রশ্ন লিখুন বা 🎤 বলুন..." />
+  <button onclick="sendMessage()">📤 পাঠাও</button>
+  <button onclick="startListening()">🎤 বলুন</button>
+  <p id="responseText"></p>
+
+  <script>
+    function saveKey() {
+      const key = document.getElementById("apiKeyInput").value;
+      localStorage.setItem("openai_api_key", key);
+      alert("✅ API Key ব্রাউজারে সেভ হয়েছে!");
+    }
+
+    async function sendMessage() {
+      const apiKey = localStorage.getItem("openai_api_key");
+      if (!apiKey) return alert("⚠️ API Key নেই! আগে সেট করুন।");
+
+      const prompt = document.getElementById("userInput").value;
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + apiKey
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+
+      const data = await res.json();
+      const reply = data.choices?.[0]?.message?.content || "❌ উত্তর পাওয়া যায়নি!";
+      document.getElementById("responseText").innerText = reply;
+      speak(reply);
+    }
+
+    function speak(text) {
+      const speech = new SpeechSynthesisUtterance(text);
+      speech.lang = "bn-BD";
+      speechSynthesis.speak(speech);
+    }
+
+    function startListening() {
+      const recognition = new webkitSpeechRecognition();
+      recognition.lang = "bn-BD";
+      recognition.onresult = (event) => {
+        const speechText = event.results[0][0].transcript;
+        document.getElementById("userInput").value = speechText;
+        sendMessage();
+      };
+      recognition.start();
+    }
+  </script>
+</body>
+</html>
